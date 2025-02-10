@@ -1,16 +1,24 @@
 [project]
 name = "bioinsp-quant"
 version = "0.1.0"
-description = ""
+description = "Bio-inspired machine learning tools for quantitative finance"
 authors = [
     {name = "Troy-Kettle",email = "troykettle19@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "requests (>=2.32.3,<3.0.0)"
 ]
 
+packages = [
+    {include = "bioinsp_quant",from = "src"}
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+
