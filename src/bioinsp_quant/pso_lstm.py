@@ -1,21 +1,49 @@
 import torch
+import torch.nn as nn
 
-# Example usage:
-if __name__ == '__main__':
-    # Path to your CSV file with yfinance data
-    csv_file = 'path_to_your_yfinance_data.csv'
-    
-    # Create an instance of the dataset (adjust the sequence_length and feature_columns as needed)
-    dataset = YFinanceDataset(csv_file, sequence_length=60)
-    
-    # Create a DataLoader to handle batching and shuffling
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    
-    # Example: Iterate over the DataLoader and print the shape of the sequences and targets
-    for batch_idx, (sequences, targets) in enumerate(dataloader):
-        print(f"Batch {batch_idx + 1}:")
-        print(f"  Input sequences shape: {sequences.shape}")  # Expected: [batch_size, sequence_length, num_features]
-        print(f"  Targets shape: {targets.shape}")            # Expected: [batch_size, num_features]
-        # Optionally, break after one batch to verify
-        break
+class MyLSTMModel(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size, num_layers=1):
+        """
+        Args:
+            input_size (int): Number of features in the input data.
+            hidden_size (int): Number of features in the hidden state.
+            output_size (int): Dimension of the output.
+            num_layers (int): Number of stacked LSTM layers.
+        """
+        super(MyLSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+
+        # Define the LSTM layer. Using batch_first=True allows inputs to be shaped as (batch, seq, feature)
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        
+        # Define a fully connected layer to map the hidden state to the final output
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        """
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, sequence_length, input_size)
+        
+        Returns:
+            torch.Tensor: Output tensor, for example of shape (batch_size, output_size)
+        """
+        # x is of shape (batch_size, sequence_length, input_size)
+        batch_size = x.size(0)
+
+        # Optionally, initialize hidden and cell states.
+        # They are of shape (num_layers, batch_size, hidden_size)
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+
+        # Pass through the LSTM layer
+        # out has shape (batch_size, sequence_length, hidden_size)
+        out, _ = self.lstm(x, (h0, c0))
+
+        # For many tasks, we only need the output from the last time step.
+        last_time_step_output = out[:, -1, :]  # Shape: (batch_size, hidden_size)
+
+        # Map the LSTM output to the final output dimension
+        output = self.fc(last_time_step_output)
+        return output
 
